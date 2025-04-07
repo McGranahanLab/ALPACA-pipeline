@@ -1,0 +1,51 @@
+Bootstrap: docker
+From: ubuntu:24.04
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    # Install system dependencies
+    apt-get update && apt-get install -y --fix-missing wget build-essential curl cmake pkg-config \
+        libcurl4-openssl-dev libssl-dev libxml2-dev libxt6 libxt-dev libmagick++-dev \
+        libfontconfig1-dev libharfbuzz-dev libfribidi-dev libcairo2-dev \
+        libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libgsl-dev \
+        zlib1g-dev libbz2-dev liblzma-dev libstdc++-10-dev libgit2-dev \
+        libncurses5-dev libncursesw5-dev libreadline-dev gcc-10 g++-10 \
+        samtools tabix bcftools language-pack-en openjdk-17-jdk unzip lsb-release git-all
+    
+    # install mamba:
+    cd /opt
+	wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"  -O miniforge3.sh
+    bash miniforge3.sh -b -p /opt/miniforge3
+    rm miniforge3.sh
+    export PATH="/opt/miniforge3/bin:$PATH"
+    conda config --set auto_update_conda false
+    
+	# install ALPACA
+    # download repositories
+    model_repo_url='https://github.com/McGranahanLab/ALPACA-model.git'
+    git clone $model_repo_url
+    mamba env create -f /opt/ALPACA-model/environment.yml -n alpaca -y
+	mamba run -n alpaca pip install /opt/ALPACA-model/dist/*.whl
+	
+    # install GATK conda env:
+    mkdir GATK && cd GATK
+    wget https://github.com/broadinstitute/gatk/releases/download/4.6.1.0/gatk-4.6.1.0.zip
+    unzip gatk-4.6.1.0.zip
+    cd gatk-4.6.1.0
+    mamba env create -n gatk -f gatkcondaenv.yml
+	
+	# install CONIPHER
+	mamba create -n conipher -c conda-forge -c bioconda conipher -y
+	
+	# install Refphase
+	mamba create -n refphase -c bioconda -c conda-forge r-base r-tidyverse r-gtools r-jsonlite r-optparse r-devtools bioconductor-genomicranges -y
+    mamba run -n refphase R -e "devtools::install_bitbucket('schwarzlab/refphase')"
+    mamba run -n refphase R -e "devtools::install_bitbucket('schwarzlab/ascat_v3_fork/ASCAT')"
+
+%environment
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+    export PATH="/opt/miniconda/bin:$PATH"
+
+%runscript
+    exec /bin/bash
