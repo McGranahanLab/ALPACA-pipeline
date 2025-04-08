@@ -1,64 +1,66 @@
-This pipeline allowes the user to run ALPACA starting from BAM files. It reqiures multiple intermediate steps, including running [CONIPHER](https://github.com/McGranahanLab/CONIPHER/blob/main/README.md) to create phylogenetic tree and [Refphase](https://bitbucket.org/schwarzlab/refphase/src/master/) to obtain fractional copy numbers from a multi-sample input.
+# ALPACA Pipeline
 
-# Requirements
+This pipeline allows the user to run ALPACA starting from BAM files. It requires multiple intermediate steps, including running [CONIPHER](https://github.com/McGranahanLab/CONIPHER/blob/main/README.md) to create phylogenetic tree and [Refphase](https://bitbucket.org/schwarzlab/refphase/src/master/) to obtain fractional copy numbers from a multi-sample input.
 
-ALPACA is designed to work with a multi-sample data, i.e. multiple samples of the same tumour acquired via 2 or more separate samplings. Therefore, it requires at least two separate tumour BAM files. The tuorial below assumes that on top of two BAM files, the matched normal BAM is also available.
+## Requirements
 
-## Files
+ALPACA is designed to work with a multi-sample data, i.e. multiple samples of the same tumour acquired via 2 or more separate samplings. Therefore, it requires at least two separate tumour BAM files. This tutorial below assumes that on top of at least two BAM files, the matched normal BAM is also available.
 
-Additionally, to call germline and somatic variants, the user should have:
+### Files
 
-- reference genome
+Additionally, to call the  germline and somatic variants, the user should have:
+
+- Reference genome
 - Panel of normals
 - Germline variants
 
-These files can be acquired from [GATK resource bundle](https://gatk.broadinstitute.org/hc/en-us/articles/360035890811-Resource-bundle) and must match genome build used to align the samples (i.e. the same build which was used for creation of BAM files.)
+These files can be acquired from [GATK resource bundle](https://gatk.broadinstitute.org/hc/en-us/articles/360035890811-Resource-bundle) and must match genome build used to align the samples (i.e. the same build which was used for creation of the BAM files.)
 
-## Software
+### Software
 
-This tutorial has been tested using Singularity (v. 3.11.3) image alongside three separate conda/mamba virtual environments. If you want to run the code without using Singularity, ensure that your base environment has all the necessary libraries as well as `samtools` `tabix` and `bcftools` installed.
+This tutorial has been tested using Singularity (v. 3.11.3) image alongside three separate conda/mamba virtual environments. If you want to run the code without using Singularity, ensure that your base environment has all the necessary libraries (see Singularity definition file `singularity/pipeline.def`) as well as `samtools` `tabix` and `bcftools` installed.
 
-Importantly, ALPACA requires Gurobi solver to work. The user can obtain free academic licence at https://www.gurobi.com/academia/academic-program-and-licenses.
+Importantly, ALPACA requires Gurobi solver to work. The user can obtain free academic license at https://www.gurobi.com/academia/academic-program-and-licenses.
 
-After obtaiting the licence, log in to your gurobi account, go to "Review your current licences" and press download icon. You will see detailed instructions to activate the licence. Pleae take note of where the gurobi.lic is saved.
+After obtaining the license, log in to your Gurobi account, go to "Review your current licenses" and press download icon. You will see detailed instructions to activate the license. Please take note of where the gurobi.lic is saved.
 
-## Hardware
+### Hardware
 
-The tutorial is implemented as a simple sequential bash script. Running Mutect2 is the longest component, but the process can be sped up by using multiple CPUs. Since Mutect2 script in this pipeline operates on each chromosome separately, we recommend to use as many CPUs as chromosomes present in the sample. 
+The tutorial is implemented as a simple sequential bash script. Running Mutect2 is the longest component, but the process can be sped up by using multiple CPUs. Since Mutect2 script in this pipeline operates on each chromosome separately, we recommend to use as many CPUs as chromosomes present in the sample. Number of CPUs is controlled by the `mutect2_cpus` parameter.
 
-# Running the pipeline
+## Running the pipeline
 
-All the necessary command to run the pipeline can be found in the pipeline.sh script. However, instead of running the entire script we advise the user to either create their own pipeline using a pipeline management software such as Nextflow or Snakemake or alternatively execute each block sequentially from a stable environment (e.g. using TMUX: `tmux new -s pipeline`).
+All the necessary command to run the pipeline can be found in the `pipeline.sh` script. However, instead of running the entire script we advise the user to either create their own pipeline using a pipeline management software such as Nextflow or Snakemake or alternatively execute each block sequentially from a stable environment (e.g. using TMUX: `tmux new -s pipeline`).
 
 ## Running via Singularity
 
 In order to guarantee the reproducibility, we recommend using Singularity container. To build the image, please use Singularity 3.11.3 - using other versions might cause issues during the build. If you have sudo privileges on the host machine, use:
 
-sudo singularity build singularity/pipeline.sif singularity/pipeline.def
+`sudo singularity build singularity/pipeline.sif singularity/pipeline.def`
 
-If you don't have sudo available, you can use remote build option (singularity build --remote pipeline.sif pipeline.def) see: https://cloud.sylabs.io/builder.
+If you don't have sudo available, you can use remote build option (`singularity build --remote pipeline.sif pipeline.def`) see: https://cloud.sylabs.io/builder.
 
-On Windows of Mac singularity must be run via a Virtual Machine (https://docs.sylabs.io/guides/3.0/user-guide/installation.html)
+On Windows of Mac singularity must be run via a [Virtual Machine](https://docs.sylabs.io/guides/3.0/user-guide/installation.html)
 
-Since Gurobi license is needed to run ALPACA, find the path to your Gurobi licence, it should be present under $GRB_LICENSE_FILE or downloaded to /Users/`{username`} if your are using free academic licence (unless you selected different location after activating the licence with grbgetkey {your-licence-key}).
+Since Gurobi license is needed to run ALPACA, find the path to your Gurobi license, it should be present under `$GRB_LICENSE_FILE`. If your are using free academic, store the path to the license file under `GRB_LICENSE_FILE variable`.
 
-Once the image is build, activate the singularity shell with:
+Once the image is built, activate the singularity shell with:
 
 ```bash
 image_path=path/to/your/image.sif
-singularity shell -B path/to/host/filesystem -B path/to/guorbi/licence $image_path
+singularity shell -B path/to/host/filesystem -B path/to/gurobi.lic $image_path
 ```
 
 E.g.
 
 ```bash
 image_path=singularity/pipeline.sif
-singularity shell -B /Users/test_data -B /Users/gurobi.lic $image_path
+singularity shell -B /Users/GitHub/ALPACA-pipeline -B $GRB_LICENSE_FILE $image_path
 ```
 
 ## Running without Singularity
 
-You can also run the pipeline without provided Singularity image. In this case, ensure that all the necessary libraries as well as `samtools` `tabix` and `bcftools` installed in your base environment. You will also need conda or mamba to create virtual environments.
+You can also run the pipeline without the Singularity image. In this case, ensure that all the necessary libraries as well as `samtools` `tabix` and `bcftools` installed in your base environment. You will also need conda or mamba to create three virtual environments.
 
 ### GATK environment
 
@@ -70,11 +72,12 @@ wget https://github.com/broadinstitute/gatk/releases/download/4.6.1.0/gatk-4.6.1
 unzip gatk-4.6.1.0.zip
 cd gatk-4.6.1.0
 conda env create -n gatk -f gatkcondaenv.yml
+cd ../..
 ```
 
-### Refphase environemnt
+### Refphase environment
 
-In order to run ASCAT and Refphase create a `refphase` conda environemtn with:
+In order to run ASCAT and Refphase create a `refphase` conda environment with:
 
 ```bash
 conda create -n refphase -c bioconda -c conda-forge r-base r-tidyverse r-gtools r-jsonlite r-optparse r-devtools bioconductor-genomicranges -y
@@ -95,8 +98,12 @@ conda create -n conipher -c conda-forge -c bioconda conipher -y
 Finally, create `alpaca` environment with:
 
 ```bash
-conda env create -f repo/ALPACA-model/environment.yml -n alpaca -y
+# download repositories
+model_repo_url='https://github.com/McGranahanLab/ALPACA-model.git'
+git clone $model_repo_url
+conda env create -f ALPACA-model/environment.yml -n alpaca -y
 conda run -n alpaca pip install repo/ALPACA-model/dist/*.whl
+conda run -n alpaca pip install pysam
 ```
 
 ## The pipeline
@@ -112,8 +119,7 @@ Start by creating a new TMUX seession:
 tmux new -s pipeline
 ```
 
-Next, define the paths to Singularity image, guorbi licence and working directory and open Singularity shell
-
+Next, define the paths to Singularity image, Guorbi license and working directory and open Singularity shell
 
 ```bash
 image_path="singularity/pipeline.sif"
@@ -122,7 +128,8 @@ work_dir=$(pwd)
 singularity shell -B $work_dir -B $license_path $image_path 
 ```
 
-Finally, initialise conda with:
+Finally, initialize conda with:
+
 ```bash
 source /opt/miniforge3/etc/profile.d/conda.sh
 ```
@@ -174,6 +181,7 @@ _assets/
 ```
 
 ### Parameters
+
 Next, we define parameters used in the pipeline:
 
 ```bash
@@ -196,7 +204,7 @@ for bam_file in "$bams_path"/*.bam; do
 done
 echo "Sample names: ${SAMPLES[@]}"
 
-# conipher requires case identifier composed of a 'prefix' and a case number:
+# CONIPHER requires case identifier composed of a 'prefix' and a case number:
 case_id=LTX0000
 prefix=LTX
 
@@ -214,12 +222,13 @@ mutect2_cpus=24
 depth_threrehold=30 # Threshold for total depth of mutation in each sample
 varcount_threshold=10 # Threshold for minimum variant count of mutation in sample
 germline_variant_read_count_threshold=5 # Reject variant if we find more than X reads for this variant in germline
-germline_vaf_threshold=0.01 # Reject variant if gemline VAF is above X
+germline_vaf_threshold=0.01 # Reject variant if germline VAF is above X
 variant_vaf_threshold=0.05  # Reject variant if VAF is below X
 ```
 
 ### Paths
-Define all the necessary paths and initialise empty directories:
+
+Define all the necessary paths and initialize empty directories:
 
 ```bash
 # ==============================================
@@ -314,6 +323,7 @@ run_mutect2() {
 ```
 
 ### Input preparation
+
 Make sure that your BAMs and reference files are properly indexed. If not, you can create the index by running `samtools index` and `samtools faidx`.
 E.g.:
 
@@ -331,9 +341,8 @@ samtools faidx $reference
 ```
 
 ### Germline variants
+
 Next, we call germline variants using bcftools:
-
-
 
 ```bash
 # ==============================
@@ -378,13 +387,13 @@ done
 ```
 
 ### ASCAT and Refphase
-We start by activaing the refphase conda and then we run a preprocessing script, followed by ASCAT and Refphase. 
+
+We start by activaing the refphase conda and then we run a preprocessing script, followed by ASCAT and Refphase.
 
 ```bash
 # ==============================
 # ASCAT and REFPHASE
 # ==============================
-
 
 conda activate /opt/miniforge3/envs/refphase # or just conda activate refphase if running without singularity
 
@@ -409,9 +418,10 @@ conda deactivate
 ```
 
 Troubleshooitng:
-If ASCAT fails to find optimal purity and ploidy, you migh need to adujust SNP filtering thresholds (germline_snp_min_depth_normal). 
+If ASCAT fails to find optimal purity and ploidy, you migh need to adujust SNP filtering thresholds (germline_snp_min_depth_normal).
 
 ### Somatic variants
+
 In order to run CONIPHER we need to identify somatic mutations - this step takes a long time if done on a single CPU. The script below can accomodate both single and multiple cpus. For maximum efficient, use separate cpu for each chromosome
 
 Before running this commands, remember to deactivate previous conda environment and activate `gatk`
@@ -591,7 +601,7 @@ conda deactivate
 
 In this setup we transfrom somatic variants into CONIPHER input table and run the CONIPHER tool to obtain phylogenetic trees and clone proportions. Before proceeding, remember to deactivate previous environment and activate `conipher`.
 
-```
+```bash
 # ==============================
 # CONIPHER
 # ==============================
@@ -607,9 +617,10 @@ conda deactivate
 ```
 
 ### ALPACA
-Finally, we will use Refphase and CONIPHER outputs to run Alpaca. Before proceeding, please remember to deactivate `conipher` environment and activate `alpaca`. # Before running ALPACA, make sure the solutions provided by CONIPHER and Refphase are satisfactory. For example, check if purity and ploidy estimates are reasonable and ensure that the clonal cluster in CONIPHER output tree has CCF values of around 100 in each sample CCF values can be found in `conipher/output/Trees/pytree_and_bar.pdf` plot on left hand side.
 
-```
+Finally, we will use Refphase and CONIPHER outputs to run Alpaca. Before proceeding, please remember to deactivate `conipher` environment and activate `alpaca`. Before running ALPACA, make sure the solutions provided by CONIPHER and Refphase are satisfactory. For example, check if purity and ploidy estimates are reasonable and ensure that the clonal cluster in CONIPHER output tree has CCF values of around 100 in each sample CCF values can be found in `conipher/output/Trees/pytree_and_bar.pdf` plot on left hand side.
+
+```bash
 # ==============================
 # ALPACA
 # ==============================

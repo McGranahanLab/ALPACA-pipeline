@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # ==============================
 # Setup
 # ==============================
@@ -17,7 +19,7 @@
 image_path="singularity/pipeline.sif"
 license_path=$GRB_LICENSE_FILE
 work_dir=$(pwd)
-singularity shell -B $work_dir -B $license_path $image_path 
+singularity shell -B "$work_dir" -B "$license_path" $image_path 
 
 # initialise conda:
 source /opt/miniforge3/etc/profile.d/conda.sh
@@ -340,7 +342,7 @@ done
 # Clean up temporary files if successful
 if [ -f "${output_vcf}" ]; then
   echo "Cleaning up temporary files..."
-  # rm -rf "${temp_dir}"
+  rm -rf "${temp_dir}"
 fi
 
 # get summaries for each sample:

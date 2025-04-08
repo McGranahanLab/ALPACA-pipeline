@@ -26,6 +26,7 @@ From: ubuntu:24.04
     git clone $model_repo_url
     mamba env create -f /opt/ALPACA-model/environment.yml -n alpaca -y
 	mamba run -n alpaca pip install /opt/ALPACA-model/dist/*.whl
+    mamba run -n alpaca pip install pysam
 	
     # install GATK conda env:
     mkdir GATK && cd GATK
