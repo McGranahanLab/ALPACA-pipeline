@@ -185,7 +185,14 @@ run_mutect2() {
 bcftools mpileup -Ou -f $reference $bam_normal_path | \
 bcftools call -mv -Ou | \
 bcftools view -v snps | \
-bcftools filter -e "FORMAT/DP[*]" < $germline_snp_min_depth_normal -Ob -o $germline_variants
+bcftools filter -e "INFO/DP[*] < $germline_snp_min_depth_normal" -Ob -o $germline_variants
+
+# throw error if $germline_variants is empty or does not exist:
+if [ ! -s $germline_variants ]; then
+    echo "Error: $germline_variants is empty or does not exist."
+    exit 1
+fi
+
 
 bcftools query --format '%CHROM\t%POS\n' $germline_variants | bgzip -c > $germline_variants_pos
 bgzip --reindex $germline_variants_pos
@@ -205,6 +212,12 @@ bcftools filter -e "FORMAT/DP[*] < $germline_snp_min_depth_tumour" -Ob -o "${mpi
 
 # Index the output file
 bcftools index "${mpileup}/all_samples.bcf"
+
+# throw error if "${mpileup}/all_samples.bcf" is empty or does not exist:
+if [ ! -s "${mpileup}/all_samples.bcf" ]; then
+    echo "Error: "${mpileup}/all_samples.bcf" is empty or does not exist."
+    exit 1
+fi
 
 # Split into individual sample files and extract required information
 for sample in "${SAMPLES[@]}"; do
