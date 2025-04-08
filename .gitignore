@@ -1,3 +1,4 @@
 _archive/*
 _assets/*
 singularity/pipeline.sif
+.history/*
