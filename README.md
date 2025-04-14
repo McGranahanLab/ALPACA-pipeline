@@ -482,15 +482,15 @@ current_job=0
 while [ $current_job -lt $total_jobs ]; do
     # Start a new batch of jobs
     active_jobs=0
-    
+  
     while [ $active_jobs -lt $mutect2_cpus ] && [ $current_job -lt $total_jobs ]; do
         chrom=${chromosomes[$current_job]}
         run_mutect2 "$chrom" &
-        
+      
         current_job=$((current_job + 1))
         active_jobs=$((active_jobs + 1))
     done
-    
+  
     # Wait for this batch to complete before starting the next batch
     wait
 done
@@ -560,10 +560,10 @@ for sample in "${SAMPLES[@]}"; do
 done
 
 /opt/GATK/gatk-4.6.1.0/gatk FilterMutectCalls \
-    -V "${somatic_dir}/_unfiltered.vcf" \
+    -V "${somatic_dir}/unfiltered.vcf" \
     -R ${reference} \
     $(echo ${input_args_cont}) \
-    --ob-priors "${somatic_dir}/_read-orientation-model.tar.gz" \
+    --ob-priors "${somatic_dir}/read-orientation-model.tar.gz" \
     -O "${somatic_dir}/filtered.vcf"
 
 

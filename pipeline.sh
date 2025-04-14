@@ -388,10 +388,10 @@ for sample in "${SAMPLES[@]}"; do
 done
 
 /opt/GATK/gatk-4.6.1.0/gatk FilterMutectCalls \
-    -V "${somatic_dir}/_unfiltered.vcf" \
+    -V "${somatic_dir}/unfiltered.vcf" \
     -R ${reference} \
     $(echo ${input_args_cont}) \
-    --ob-priors "${somatic_dir}/_read-orientation-model.tar.gz" \
+    --ob-priors "${somatic_dir}/read-orientation-model.tar.gz" \
     -O "${somatic_dir}/filtered.vcf"
 
 
